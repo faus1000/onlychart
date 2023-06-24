@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="./favicon.png">
+    <title>Only Trend chart -V100</title>
+    <style>
+        body{
+            margin: 0px;
+            overflow: hidden;
+            background-color: #020d1c;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chartContainer" style="position:absolute;height:100%; width: 100%; border:0px; margin:0px;"></div>
+    <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+    <script>
+        var symbol = "R_100";
+        var decimals = 2;
+
+        //========================================== Ontick
+
+
+        var ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+
+        ws.onopen = function (evt) {
+            ws.send(JSON.stringify({ ticks: symbol }));
+        };
+
+        var mticks = [0, 0];
+        var first = 0;
+        var allCounter = 0;
+        var neg = 0;
+        var pos = 0;
+
+        var dps = [];
+        var dataLength = 40;
+        var chart = new CanvasJS.Chart("chartContainer", {
+            theme: "light2", // "light1", "light2", "dark1", "dark2"
+            animationEnabled: true,
+            backgroundColor: "#020d1c",
+            data: [{
+                type: "line",
+                dataPoints: dps
+            }],
+            axisY: {
+                gridColor: "white",
+                gridDashType: "dot",
+                gridThickness: 0.4,
+                labelFontSize: 12,
+            },
+            axisX: {
+                gridColor: "white",
+                gridDashType: "dot",
+                gridThickness: 0.4,
+                labelFontSize: 12,
+                tickColor: "#293F56",
+                lineColor: "#293F56"
+            }
+        });
+
+
+        var xval = 1;
+        var yval = 1;
+        
+        /* ** 
+        yv = valor asignado por rangos
+        cc = changes de tick a tick
+        mcolor = marker color del punto
+        Lcolor = label color del texto
+        dg = contador de direccion consecutivo
+        lb = asignacion de texto por rangos
+        */
+        function drawOddEven(yv, cc, mcolor, lcolor, dg,lb) {
+            if (cc > 0) {
+                yval += yv;
+            } else if (cc <= 0) {
+                yval -= yv;
+            }
+// en indexlabel pueden ir : dg, yv como texto
+            dps.push({
+                x: xval,
+                y: yval,
+                indexLabel: String(yv)+lb,/*
+                indexLabel: String(yv),*/
+                indexLabelFontWeight: "bold",
+                indexLabelFontSize: 12,
+                indexLabelFontColor: lcolor,
+                markerSize: 6,
+                markerType: "circle",
+                markerColor: mcolor,
+                lineColor: "#3399ff",
+                lineDashType: "shortDot",
+                lineThickness: 0.3
+                // lineColor: "green",
+            });
+            xval += 1;
+
+            if (dps.length > dataLength) {
+                dps.shift();
+            }
+            chart.render();
+        }
+
+        ws.onmessage = function (msg) {
+            allCounter++
+            var data = JSON.parse(msg.data);
+
+            mticks[1] = data.tick.quote;
+            mticks[0] = first;
+            first = data.tick.quote;
+
+            var digit = Number(data.tick.quote).toFixed(decimals).slice(-1);
+
+            if (mticks[0] && mticks[1] != 0) {
+                var change = (Number(mticks[1] - mticks[0])).toFixed(decimals);
+
+
+                if (change > 0) {
+                    pos += 1;
+                    neg = 0;
+                    console.log(`pos: ${pos} - Neg: ${neg}`);
+                    //  drawOddEven(pos, change, "#55af11", "#008c20");
+                    // definir rangos aqui;
+                    
+                    if (change >= Math.abs(0.1) && change <= Math.abs(0.45)) {
+                        drawOddEven(1, change, "#55af11", "#01a501", pos,"u");
+                    } else if (change >= Math.abs(0.46) && change <= Math.abs(0.79)) {
+                        drawOddEven(2, change, "#55af11", "#01a501", pos,"u");
+                    } else if (change >= Math.abs(0.80) && change <= Math.abs(0.99)) {
+                        drawOddEven(3, change, "#55af11", "#01a501", pos,"u");
+                    } else if (change >= Math.abs(1.0) && change <= Math.abs(1.30)) {
+                        drawOddEven(4, change, "#55af11", "#01a501", pos,"u");
+                    } else if (change >= Math.abs(1.31) && change <= Math.abs(1.55)) {
+                        drawOddEven(5, change, "#55af11", "#01a501", pos,"u");
+                    } else if (change >= Math.abs(1.56) && change <= Math.abs(1.99)) {
+                        drawOddEven(6, change, "#55af11", "#01a501", pos,"u");
+                    } else if (change >= Math.abs(2.0) && change <= Math.abs(2.35)) {
+                        drawOddEven(7, change, "#55af11", "#01a501", pos,"u");
+                    } else if (change >= Math.abs(2.36) && change <= Math.abs(2.59)) {
+                        drawOddEven(8, change, "#55af11", "#01a501", pos,"u");
+                    } else if (change >= Math.abs(2.60) && change <= Math.abs(2.99)) {
+                        drawOddEven(9, change, "#55af11", "#01a501", pos,"u");
+                    } else if (change >= Math.abs(3.0)) {
+                        drawOddEven(10, change, "#55af11", "#01a501", pos,"u");
+                    }
+
+
+
+                } else if (change <= 0) {
+                    neg += 1;
+                    pos = 0;
+                    console.log(`pos: ${pos} - Neg: ${neg}`);
+                    // drawOddEven(neg, change, "#f95734", "red");
+                    if (change <= -0.1 && change >= - 0.45) {
+                        drawOddEven(1, change, "#f95734", "#f74117", neg,"d");
+                    } else if (change <= -0.4 && change >= -0.79) {
+                        drawOddEven(2, change, "#f95734", "#f74117", neg,"d");
+                    } else if (change <= -0.8 && change >= -0.99) {
+                        drawOddEven(3, change, "#f95734", "#f74117", neg,"d");
+                    } else if (change <= -1.0 && change >= -1.30) {
+                        drawOddEven(4, change, "#f95734", "#f74117", neg,"d");
+                    } else if (change <= -1.31 && change >= -1.55) {
+                        drawOddEven(5, change, "#f95734", "#f74117", neg,"d");
+                    } else if (change <= -1.5 && change >= -1.99) {
+                        drawOddEven(6, change, "#f95734", "#f74117", neg,"d");
+                    } else if (change <= -2.0 && change >= -2.35) {
+                        drawOddEven(7, change, "#f95734", "#f74117", neg,"d");
+                    } else if (change <= -2.36 && change >= -2.59) {
+                        drawOddEven(8, change, "#f95734", "#f74117", neg,"d");
+                    } else if (change <= -2.6 && change >= -2.99) {
+                        drawOddEven(9, change, "#f95734", "#f74117", neg,"d");
+                    } else if (change <= -3.0) {
+                        rawOddEven(10, change, "#f95734", "#f74117", neg,"d");
+                    }
+
+                }
+
+            }
+        }
+
+
+    </script>
+</body>
+
+</html>
